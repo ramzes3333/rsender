@@ -1,0 +1,61 @@
+#ifndef PREPARESCRIPTDIALOG_H
+#define PREPARESCRIPTDIALOG_H
+
+#define Uses_TDialog
+#define Uses_TInputLine
+#include <tvision/tv.h>
+
+#include <nlohmann/json.hpp>
+using nlohmann::json;
+
+#include "EnhancedLabel.h"
+#include "EnhancedEditor.h"
+#include "TemplateEditor.h"
+
+class PrepareScriptDialog : public TDialog {
+
+public:
+    PrepareScriptDialog(const TRect& bounds, const char* title);
+
+    virtual void handleEvent( TEvent& event );
+
+private:
+    std::string askOpenPath();
+    std::string askSavePath();
+    void cmdSave();
+    void cmdOpen();
+
+    EnhancedLabel *tagsLabel;
+
+    TLabel *paramsLabel;
+    TScrollBar *paramsHScroll;
+    TScrollBar *paramsVScroll;
+    EnhancedEditor *paramsEditor;
+
+    TLabel *propertiesLabel;
+    TScrollBar *propertiesHScroll;
+    TScrollBar *propertiesVScroll;
+    TemplateEditor *propertiesEditor;
+
+    TLabel *payloadLabel;
+    TScrollBar *payloadHScroll;
+    TScrollBar *payloadVScroll;
+    TemplateEditor *payloadEditor;
+    TInputLine *routingkeyInputLine;
+    TInputLine *exchangeInputLine;
+
+    TInputLine *hostInputLine;
+    TInputLine *portInputLine;
+    TInputLine *usernameInputLine;
+    TInputLine *passwordInputLine;
+    TInputLine *vhostInputLine;
+
+    TLabel *scriptLabel;
+    TScrollBar *scriptHScroll;
+    TScrollBar *scriptVScroll;
+    EnhancedEditor *scriptEditor;
+
+    std::string lastScriptPath;
+};
+
+#endif //PREPARESCRIPTDIALOG_H
