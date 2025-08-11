@@ -4,6 +4,8 @@
 #include <functional>
 #include <string>
 #include <thread>
+#include <atomic>
+#include <sys/types.h>
 
 class ScriptRunner {
 public:

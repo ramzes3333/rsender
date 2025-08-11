@@ -59,12 +59,12 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     propertiesLabel = new TLabel(TRect(53, 1, 66, 2), "Properties:", nullptr);
     insert(propertiesLabel);
 
-    propertiesHScroll = new TScrollBar(TRect(53, 13, 150, 14));
+    propertiesHScroll = new TScrollBar(TRect(53, 13, size.x-3, 14));
     propertiesHScroll->growMode = gfGrowHiX;
-    propertiesVScroll = new TScrollBar(TRect(150, 2, 151, 13));
+    propertiesVScroll = new TScrollBar(TRect(size.x-3, 2, size.x-2, 13));
     propertiesVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    propertiesEditor = new TemplateEditor(TRect(53, 2, 150, 13), propertiesHScroll, propertiesVScroll, nullptr, 1000);
+    propertiesEditor = new TemplateEditor(TRect(53, 2, size.x-3, 13), propertiesHScroll, propertiesVScroll, nullptr, 1000);
     propertiesEditor->options |= ofSelectable | ofFramed;
     propertiesEditor->growMode = gfGrowHiX;
     //propertiesEditor->setState(sfActive, true);
@@ -77,12 +77,12 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     payloadLabel = new TLabel(TRect(53, 15, 63, 16), "Payload:", nullptr);
     insert(payloadLabel);
 
-    payloadHScroll = new TScrollBar(TRect(53, 25, 150, 26));
+    payloadHScroll = new TScrollBar(TRect(53, 25, size.x-3, 26));
     payloadHScroll->growMode = gfGrowHiX;
-    payloadVScroll = new TScrollBar(TRect(150, 16, 151, 25));
+    payloadVScroll = new TScrollBar(TRect(size.x-3, 16, size.x-2, 25));
     payloadVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    payloadEditor = new TemplateEditor(TRect(53, 16, 150, 25), payloadHScroll, payloadVScroll, nullptr, 1000);
+    payloadEditor = new TemplateEditor(TRect(53, 16, size.x-3, 25), payloadHScroll, payloadVScroll, nullptr, 1000);
     payloadEditor->options |= ofSelectable | ofFramed;
     payloadEditor->growMode = gfGrowHiX;
     //payloadEditor->setState(sfActive, true);
@@ -131,12 +131,12 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     scriptLabel = new TLabel(TRect(2, 35, 20, 36), "Generated script:", nullptr);
     insert(scriptLabel);
 
-    scriptHScroll = new TScrollBar(TRect(2, 47, 150, 48));
+    scriptHScroll = new TScrollBar(TRect(2, 47, size.x-3, 48));
     scriptHScroll->growMode = gfGrowHiX;
-    scriptVScroll = new TScrollBar(TRect(150, 36, 151, 47));
+    scriptVScroll = new TScrollBar(TRect(size.x-3, 36, size.x-2, 47));
     scriptVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    scriptEditor = new EnhancedEditor(TRect(2, 36, 150, 47), scriptHScroll, scriptVScroll, nullptr, 65025);
+    scriptEditor = new EnhancedEditor(TRect(2, 36, size.x-3, 47), scriptHScroll, scriptVScroll, nullptr, 65025);
     scriptEditor->options |= ofSelectable | ofFramed;
     scriptEditor->growMode = gfGrowHiX;
     //scriptEditor->setState(sfActive, true);
@@ -258,6 +258,11 @@ std::string PrepareScriptDialog::askOpenPath() {
     return {};
 }
 
+static inline bool str_ends_with(const std::string &s, std::string_view suf) {
+    if (s.size() < suf.size()) return false;
+    return std::equal(s.end() - suf.size(), s.end(), suf.begin());
+}
+
 std::string PrepareScriptDialog::askSavePath() {
     ScopeCwd guard(kProjectsDir);
     auto* d = new TFileDialog("*.json", "Save project as", "~N~ame", fdOpenButton, 101);
@@ -268,7 +273,8 @@ std::string PrepareScriptDialog::askSavePath() {
             char name[PATH_MAX] = {0};
             d->getData(name);
             std::string out = (std::filesystem::path(kProjectsDir) / name).string();
-            if (!std::string(name).ends_with(".json")) out += ".json";
+            //if (!std::string(name).ends_with(".json")) out += ".json";
+            if (!str_ends_with(std::string(name), ".json")) out += ".json";
             return out;
         }
     }

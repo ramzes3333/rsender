@@ -4,7 +4,9 @@
 #include <cstring>
 
 TProgressBar::TProgressBar(const TRect& bounds, int initPercent)
-        : TView(bounds), percent(std::ranges::clamp(initPercent, 0, 100))
+        : TView(bounds),
+            //percent(std::ranges::clamp(initPercent, 0, 100))
+            percent(std::clamp(initPercent, 0, 100))
 {
     growMode = gfGrowHiX;
     options |= ofSelectable;

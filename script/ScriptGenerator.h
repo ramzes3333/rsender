@@ -19,6 +19,10 @@ public:
 struct ScriptResult {
     std::string name;
     std::string content;
+
+    ScriptResult() = default;
+    ScriptResult(std::string name, std::string content)
+        : name(std::move(name)), content(std::move(content)) {}
 };
 
 class ScriptGenerator {

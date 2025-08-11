@@ -107,6 +107,7 @@ ScriptResult ScriptGenerator::generateScript() {
 
         output << "./rabbitmqadmin.py -u\"${RABBITMQ_USERNAME}\" -p\"${RABBITMQ_PASSWORD}\" "
                << "-H\"${RABBITMQ_HOST}\" -P\"${RABBITMQ_PORT}\" "
+               << "-V\"${RABBITMQ_VIRTUAL_HOST}\" "
                << "publish routing_key=\"" << routingkey << "\" exchange=" << exchange << " "
                << "properties=\"${properties}\" payload=\"${payload}\"\n";
         //output << "sleep 1\n";
