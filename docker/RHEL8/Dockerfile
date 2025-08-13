@@ -1,10 +1,11 @@
 FROM rockylinux:8 AS build
 
-# Base build deps
+# Base build deps + tools used below
 RUN dnf -y install epel-release && \
     dnf -y install gcc gcc-c++ make git cmake curl xz unzip \
-                   ncurses-devel gpm-devel && \
-    dnf clean all
+                   ncurses-devel gpm-devel \
+                   libcurl-devel \
+    && dnf clean all
 
 # Build & install nlohmann_json (CMake package)
 WORKDIR /opt
@@ -25,6 +26,7 @@ RUN cmake -B build -DCMAKE_BUILD_TYPE=Release && \
 
 # Sources
 WORKDIR /src
+ADD helper-script /src/helper-script
 ADD script /src/script
 ADD ui /src/ui
 ADD util /src/util
@@ -48,5 +50,9 @@ RUN cmake --install build --prefix /out && ls -R /out
 # ----- minimal runtime image -----
 FROM rockylinux:8 AS out
 WORKDIR /app
+
+# Keep runtime deps minimal; libcurl-minimal is already in the base image
+RUN dnf -y install ncurses-libs gpm-libs && dnf clean all
+
 COPY --from=build /out/ ./
 ENTRYPOINT ["/app/bin/rsender"]
