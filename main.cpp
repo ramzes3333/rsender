@@ -29,6 +29,9 @@ public:
 MyApp::MyApp() : TProgInit(initStatusLine, initMenuBar, initDeskTop), TApplication() {
     std::filesystem::create_directories("rsender-data/projects");
     std::filesystem::create_directories("rsender-data/generated");
+    std::filesystem::create_directories("rsender-data/rabbitmqadmin-scripts");
+    std::filesystem::create_directories("rsender-data/run");
+
     TRect r(2, 2, size.x - 3, size.y - 3);
     PrepareScriptDialog *dlg = new PrepareScriptDialog(r, "RabbitMQ messages script generator");
     dlg->options |= ofCentered;

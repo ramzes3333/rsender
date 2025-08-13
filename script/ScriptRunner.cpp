@@ -2,7 +2,6 @@
 
 #include <atomic>
 #include <cstdio>
-#include <cstring>
 #include <fcntl.h>
 #include <functional>
 #include <string>
@@ -14,8 +13,12 @@
 #include <pty.h>
 #include <poll.h>
 #include <termios.h>
+#include <filesystem>
 
 #include "../util/Logger.h"
+#include "RunWorkspace.h"
+
+namespace fs = std::filesystem;
 
 ScriptRunner::ScriptRunner() : pid_(-1), running_(false), totalHits_(0) {}
 
@@ -28,7 +31,19 @@ void ScriptRunner::run(const std::string& scriptPath,
 {
     if (running_) return;
 
-    totalHits_ = countOccurrencesInFile(scriptPath, kNeedle); // make sure this actually finds the phrase
+    RunWorkspaceResult prep = prepareRunWorkspace(scriptPath);
+    if (!prep.ok) {
+        if (onExit) onExit(-1);
+        if (onLine) onLine("[rsender] " + prep.error);
+        return;
+    }
+
+    const std::string runDirAbs   = fs::absolute(prep.runDir).string();
+    const std::string scriptAbs   = fs::absolute(prep.scriptDst).string();
+    const std::string scriptBase  = fs::path(prep.scriptDst).filename().string();
+    const std::string scriptRel   = "./" + scriptBase;
+
+    totalHits_ = countOccurrencesInFile(scriptAbs, kNeedle); // make sure this actually finds the phrase
     currentHits_ = 0;
     onProgress_ = std::move(onProgress);
     onLine_     = std::move(onLine);
@@ -36,7 +51,7 @@ void ScriptRunner::run(const std::string& scriptPath,
 
     running_ = true;
 
-    runnerThread_ = std::thread([this, scriptPath]() {
+    runnerThread_ = std::thread([this, runDirAbs, scriptRel, scriptAbs]() {
         int mfd = -1;
         pid_t cpid = -1;
 
@@ -49,9 +64,25 @@ void ScriptRunner::run(const std::string& scriptPath,
         }
 
         if (cpid == 0) {
-            // Child: we are attached to PTY slave as stdin/out/err
-            // Exec via bash; or exec the script directly if it has a shebang and +x.
-            execl("/bin/bash", "bash", scriptPath.c_str(), (char*)nullptr);
+            if (::chdir(runDirAbs.c_str()) != 0) {
+                perror("chdir");
+                _exit(126);
+            }
+
+            // Optional safety: ensure the script is readable from the new CWD.
+            if (::access(scriptRel.c_str(), R_OK) != 0) {
+                // As a fallback, try the absolute path (in case chdir is fine but name mismatch).
+                if (::access(scriptAbs.c_str(), R_OK) == 0) {
+                    execl("/bin/bash", "bash", scriptAbs.c_str(), (char*)nullptr);
+                    perror("execl(abs)");
+                    _exit(127);
+                }
+                perror("access(script)");
+                _exit(126);
+            }
+
+            // Exec relative path from inside run dir.
+            execl("/bin/bash", "bash", scriptRel.c_str(), (char*)nullptr);
             perror("execl");
             _exit(127);
         }

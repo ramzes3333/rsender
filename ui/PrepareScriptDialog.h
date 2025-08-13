@@ -17,6 +17,8 @@ class PrepareScriptDialog : public TDialog {
 public:
     PrepareScriptDialog(const TRect& bounds, const char* title);
 
+    bool isDataCorrectBeforeScriptGeneration();
+
     virtual void handleEvent( TEvent& event );
 
 private:

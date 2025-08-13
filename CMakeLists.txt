@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS ON)
 find_package(tvision REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(Threads REQUIRED)
+find_package(CURL REQUIRED)
 
 add_executable(rsender
         main.cpp
@@ -28,6 +29,14 @@ add_executable(rsender
         ui/PasswordInputLine.cpp ui/PasswordInputLine.h
         ui/TProgressBar.cpp ui/TProgressBar.h
         Const.h
+        script/ParamsValidator.cpp
+        script/ParamsValidator.h
+        script/JsonValidator.cpp
+        script/JsonValidator.h
+        helper-script/RabbitMqAdminScriptDownloader.cpp
+        helper-script/RabbitMqAdminScriptDownloader.h
+        script/RunWorkspace.cpp
+        script/RunWorkspace.h
 )
 
 # --- Link libraries ---
@@ -37,6 +46,7 @@ target_link_libraries(rsender
         nlohmann_json::nlohmann_json
         Threads::Threads    # pthread
         util                # for forkpty (libutil)
+        CURL::libcurl
 )
 
 # --- GCC 8 filesystem quirk ---

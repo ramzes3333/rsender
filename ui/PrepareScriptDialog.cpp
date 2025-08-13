@@ -9,21 +9,25 @@
 #define Uses_TDeskTop
 #define Uses_TFileDialog
 #define Uses_TFileInfoPane
+#define Uses_MsgBox
 
 #include "PrepareScriptDialog.h"
 
 #include <fstream>
 
+#include "../helper-script/RabbitMqAdminScriptDownloader.h"
 #include "../script/ScriptGenerator.h"
 #include "../script/TagsExtractor.h"
+#include "../script/ScriptSaver.h"
+#include "../script/ParamsValidator.h"
+#include "../script/JsonValidator.h"
+#include "../util/Utils.h"
+#include "../util/Logger.h"
 #include "../Const.h"
 #include "EnhancedLabel.h"
 #include "EnhancedEditor.h"
 #include "PasswordInputLine.h"
 #include "RunScriptDialog.h"
-#include "../util/Utils.h"
-#include "../script/ScriptSaver.h"
-#include "../util/Logger.h"
 
 static constexpr const char* kProjectsDir = "rsender-data/projects";
 static constexpr const char* kFilter = "*.json";
@@ -146,6 +150,46 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     insert(scriptEditor);
 }
 
+bool PrepareScriptDialog::isDataCorrectBeforeScriptGeneration() {
+    auto paramsValidationResult = validateParams(
+        paramsEditor->getEditorText(),
+        tagsLabel->getText()
+    );
+
+    if (!paramsValidationResult.ok) {
+        messageBox(mfError | mfOKButton,
+                   "Params validation failed!\n\n"
+                   "Invalid lines: %zu\n"
+                   "First invalid line: %zu\n"
+                   "Content: %s",
+                   paramsValidationResult.invalidCount,
+                   paramsValidationResult.firstInvalidLine,
+                   paramsValidationResult.firstInvalidContent.c_str());
+        return false;
+    }
+
+    auto propertiesValidationResult = validateTemplateJson(propertiesEditor->getEditorText());
+    if (!propertiesValidationResult.ok) {
+        messageBox(mfError | mfOKButton,
+                   "Invalid properties\n\n%s\n(line %zu, col %zu)\n...\n%.*s",
+                   propertiesValidationResult.message.c_str(),
+                   propertiesValidationResult.line, propertiesValidationResult.col,
+                   (int)propertiesValidationResult.snippet.size(), propertiesValidationResult.snippet.c_str());
+        return false;
+    }
+
+    auto payloadValidationResult = validateTemplateJson(payloadEditor->getEditorText());
+    if (!payloadValidationResult.ok) {
+        messageBox(mfError | mfOKButton,
+                   "Invalid payload\n\n%s\n(line %zu, col %zu)\n...\n%.*s",
+                   payloadValidationResult.message.c_str(),
+                   payloadValidationResult.line, payloadValidationResult.col,
+                   (int)payloadValidationResult.snippet.size(), payloadValidationResult.snippet.c_str());
+        return false;
+    }
+    return true;
+}
+
 void PrepareScriptDialog::handleEvent(TEvent& event) {
     if (event.what == evBroadcast && event.message.command == cmUpdateTags) {
         if (!tagsLabel)
@@ -175,6 +219,13 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
             if (lastScriptPath.empty() || !std::filesystem::exists(lastScriptPath)) {
                 Logger::log("No generated script file to preview/run. Generate the script first.");
             } else {
+                auto result = ensureRabbitmqAdmin(Utils::getInputLineText(hostInputLine), Utils::getInputLineText(portInputLine));
+                if (!result.error.empty()) {
+                    messageBox(mfError | mfOKButton, "Error", "RabbitMQ admin download failed:\n%s", result.error.c_str());
+                    Logger::log("RabbitMQ admin download failed");
+                    return;
+                }
+
                 TRect r(0, 0, 90, 24);
                 auto *dlg = new RunScriptDialog(r, lastScriptPath);
                 if (TView *v = TProgram::application->validView(dlg)) {
@@ -190,6 +241,8 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
             return;
         }
         if (event.message.command == cmGenerateScript) {
+            if (!isDataCorrectBeforeScriptGeneration()) return;
+
             auto *rabbit = new RabbitMQAccessData(
                 Utils::getInputLineText(hostInputLine),
                 Utils::getInputLineText(portInputLine),
