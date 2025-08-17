@@ -10,6 +10,7 @@ public:
     using TEditor::TEditor;
 
     std::string getEditorText();
+    void setEditorText(const std::string& s);
 };
 
 #endif //ENHANCEDEDITOR_H

@@ -1,20 +1,10 @@
 #ifndef SCRIPTGENERATOR_H
 #define SCRIPTGENERATOR_H
 
+#include "../rabbitmq-access-data/RabbitMQAccessData.h"
+
 #include <string>
 #include <atomic>
-
-class RabbitMQAccessData {
-public:
-    RabbitMQAccessData(const std::string &host, const std::string &port, const std::string &vhost,
-        const std::string &username, const std::string &password);
-
-    const std::string host;
-    const std::string port;
-    const std::string vhost;
-    const std::string username;
-    const std::string password;
-};
 
 struct ScriptResult {
     std::string name;

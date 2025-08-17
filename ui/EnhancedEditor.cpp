@@ -8,3 +8,9 @@ std::string EnhancedEditor::getEditorText() {
     }
     return result;
 }
+
+void EnhancedEditor::setEditorText(const std::string &s) {
+    this->setSelect(0, this->bufLen, false);
+    this->deleteSelect();
+    this->insertText(s.c_str(), s.size(), false);
+}

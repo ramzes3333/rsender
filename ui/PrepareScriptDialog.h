@@ -17,15 +17,23 @@ class PrepareScriptDialog : public TDialog {
 public:
     PrepareScriptDialog(const TRect& bounds, const char* title);
 
-    bool isDataCorrectBeforeScriptGeneration();
+    void setParameters(const std::string& parameters);
+    void setProperties(const std::string& properties);
+    void setPayload(const std::string& payload);
+    void setRoutingKey(const std::string& routingKey);
+    void setExchange(const std::string& exchange);
 
     virtual void handleEvent( TEvent& event );
 
 private:
+    void saveRabbitMQAccessData();
+
     std::string askOpenPath();
     std::string askSavePath();
     void cmdSave();
     void cmdOpen();
+
+    bool isDataCorrectBeforeScriptGeneration();
 
     EnhancedLabel *tagsLabel;
 

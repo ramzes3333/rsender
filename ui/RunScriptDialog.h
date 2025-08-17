@@ -6,6 +6,7 @@
 #define Uses_TStaticText
 #define Uses_TScrollBar
 #define Uses_TEditor
+
 #include <memory>
 #include <tvision/tv.h>
 #include <string>

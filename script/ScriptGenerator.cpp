@@ -2,8 +2,8 @@
 
 #include <ctime>
 
-#include "../util/Logger.h"
 #include "../util/Utils.h"
+#include "../rabbitmq-access-data/RabbitMQAccessData.h"
 #include <sstream>
 #include <vector>
 

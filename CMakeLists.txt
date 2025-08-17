@@ -20,6 +20,9 @@ add_executable(rsender
         script/TagsExtractor.cpp script/TagsExtractor.h
         script/ScriptSaver.cpp script/ScriptSaver.h
         script/ScriptRunner.cpp script/ScriptRunner.h
+        script/RunWorkspace.cpp script/RunWorkspace.h
+        script/ParamsValidator.cpp script/ParamsValidator.h
+        script/JsonValidator.cpp script/JsonValidator.h
         ui/PrepareScriptDialog.cpp ui/PrepareScriptDialog.h
         ui/EnhancedLabel.cpp ui/EnhancedLabel.h
         ui/EnhancedEditor.cpp ui/EnhancedEditor.h
@@ -28,15 +31,12 @@ add_executable(rsender
         ui/ReadOnlyEditor.cpp ui/ReadOnlyEditor.h
         ui/PasswordInputLine.cpp ui/PasswordInputLine.h
         ui/TProgressBar.cpp ui/TProgressBar.h
-        Const.h
-        script/ParamsValidator.cpp
-        script/ParamsValidator.h
-        script/JsonValidator.cpp
-        script/JsonValidator.h
+        ui/MessageExtractDialog.cpp ui/MessageExtractDialog.h
         helper-script/RabbitMqAdminScriptDownloader.cpp
         helper-script/RabbitMqAdminScriptDownloader.h
-        script/RunWorkspace.cpp
-        script/RunWorkspace.h
+        extractor/MessageExtractor.cpp extractor/MessageExtractor.h
+        rabbitmq-access-data/RabbitMQAccessData.cpp rabbitmq-access-data/RabbitMQAccessData.h
+        Const.h
 )
 
 # --- Link libraries ---

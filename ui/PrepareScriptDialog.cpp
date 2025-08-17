@@ -32,6 +32,11 @@
 static constexpr const char* kProjectsDir = "rsender-data/projects";
 static constexpr const char* kFilter = "*.json";
 
+auto setInput = [](TInputLine* in, const std::string& s) {
+    // setData copies the null-terminated string; safe to pass c_str()
+    in->setData((void*)s.c_str());
+};
+
 PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title) : TWindowInit(&PrepareScriptDialog::initFrame), TDialog(bounds, title) {
     palette = dpBlueDialog;
     options |= ofCentered | ofSelectable;
@@ -39,7 +44,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     //setState(sfModal, true);
 
     /*-------------------------------------*/
-    tagsLabel = new EnhancedLabel(TRect(1, 1, 50, 2), "Tags: no tags", nullptr);
+    tagsLabel = new EnhancedLabel(TRect(1, 1, size.x-2, 2), "Tags: no tags", nullptr);
     insert(tagsLabel);
 
     paramsLabel = new TLabel(TRect(2, 2, 15, 3), "Parameters:", nullptr);
@@ -60,15 +65,15 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     insert(paramsEditor);
 
     /*-------------------------------------*/
-    propertiesLabel = new TLabel(TRect(53, 1, 66, 2), "Properties:", nullptr);
+    propertiesLabel = new TLabel(TRect(53, 2, 66, 3), "Properties:", nullptr);
     insert(propertiesLabel);
 
     propertiesHScroll = new TScrollBar(TRect(53, 13, size.x-3, 14));
     propertiesHScroll->growMode = gfGrowHiX;
-    propertiesVScroll = new TScrollBar(TRect(size.x-3, 2, size.x-2, 13));
+    propertiesVScroll = new TScrollBar(TRect(size.x-3, 3, size.x-2, 13));
     propertiesVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    propertiesEditor = new TemplateEditor(TRect(53, 2, size.x-3, 13), propertiesHScroll, propertiesVScroll, nullptr, 1000);
+    propertiesEditor = new TemplateEditor(TRect(53, 3, size.x-3, 13), propertiesHScroll, propertiesVScroll, nullptr, 1000);
     propertiesEditor->options |= ofSelectable | ofFramed;
     propertiesEditor->growMode = gfGrowHiX;
     //propertiesEditor->setState(sfActive, true);
@@ -148,6 +153,34 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     insert(scriptHScroll);
     insert(scriptVScroll);
     insert(scriptEditor);
+
+    if (auto loaded = loadRabbitParams(); loaded.has_value()) {
+        setInput(hostInputLine,     loaded->host);
+        setInput(portInputLine,     loaded->port);
+        setInput(vhostInputLine,    loaded->vhost);
+        setInput(usernameInputLine, loaded->username);
+        setInput(passwordInputLine, loaded->password);
+    }
+}
+
+void PrepareScriptDialog::setParameters(const std::string &parameters) {
+    paramsEditor->setEditorText(parameters);
+}
+
+void PrepareScriptDialog::setProperties(const std::string &properties) {
+    propertiesEditor->setEditorText(properties);
+}
+
+void PrepareScriptDialog::setPayload(const std::string &payload) {
+    payloadEditor->setEditorText(payload);
+}
+
+void PrepareScriptDialog::setRoutingKey(const std::string& routingKey) {
+    routingkeyInputLine->setData((void*)routingKey.c_str());
+}
+
+void PrepareScriptDialog::setExchange(const std::string &exchange) {
+    routingkeyInputLine->setData((void*)exchange.c_str());
 }
 
 bool PrepareScriptDialog::isDataCorrectBeforeScriptGeneration() {
@@ -190,6 +223,19 @@ bool PrepareScriptDialog::isDataCorrectBeforeScriptGeneration() {
     return true;
 }
 
+void PrepareScriptDialog::saveRabbitMQAccessData() {
+    RabbitMQAccessData params(
+            Utils::getInputLineText(hostInputLine),
+            Utils::getInputLineText(portInputLine),
+            Utils::getInputLineText(vhostInputLine),
+            Utils::getInputLineText(usernameInputLine),
+            Utils::getInputLineText(passwordInputLine)
+        );
+
+    std::string err;
+    saveRabbitParams(params, "rsender-data/last_rabbitmq.json", &err);
+}
+
 void PrepareScriptDialog::handleEvent(TEvent& event) {
     if (event.what == evBroadcast && event.message.command == cmUpdateTags) {
         if (!tagsLabel)
@@ -226,6 +272,8 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
                     return;
                 }
 
+                saveRabbitMQAccessData();
+
                 TRect r(0, 0, 90, 24);
                 auto *dlg = new RunScriptDialog(r, lastScriptPath);
                 if (TView *v = TProgram::application->validView(dlg)) {
@@ -242,6 +290,8 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
         }
         if (event.message.command == cmGenerateScript) {
             if (!isDataCorrectBeforeScriptGeneration()) return;
+
+            saveRabbitMQAccessData();
 
             auto *rabbit = new RabbitMQAccessData(
                 Utils::getInputLineText(hostInputLine),
@@ -368,19 +418,9 @@ void PrepareScriptDialog::cmdOpen() {
     try { in >> j; }
     catch (const std::exception& e) { Logger::log(std::string("Invalid JSON: ") + e.what()); return; }
 
-    auto setEditor = [](TEditor* ed, const std::string& s) {
-        ed->setSelect(0, ed->bufLen, false);
-        ed->deleteSelect();
-        ed->insertText(s.c_str(), s.size(), false);
-    };
-    auto setInput = [](TInputLine* in, const std::string& s) {
-        // setData copies the null-terminated string; safe to pass c_str()
-        in->setData((void*)s.c_str());
-    };
-
-    setEditor(paramsEditor,     j.value("params",     ""));
-    setEditor(propertiesEditor, j.value("properties", ""));
-    setEditor(payloadEditor,    j.value("payload",    ""));
+    paramsEditor->setEditorText(    j.value("params",     ""));
+    propertiesEditor->setEditorText(j.value("properties", ""));
+    payloadEditor->setEditorText(   j.value("payload",    ""));
 
     setInput(routingkeyInputLine, j.value("routingKey", ""));
     setInput(exchangeInputLine,   j.value("exchange",   ""));
