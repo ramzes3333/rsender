@@ -27,6 +27,8 @@ RUN cmake -B build -DCMAKE_BUILD_TYPE=Release && \
 # Sources
 WORKDIR /src
 ADD helper-script /src/helper-script
+ADD extractor /src/extractor
+ADD rabbitmq-access-data /src/rabbitmq-access-data
 ADD script /src/script
 ADD ui /src/ui
 ADD util /src/util
