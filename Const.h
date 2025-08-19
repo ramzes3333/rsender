@@ -20,6 +20,8 @@ const unsigned cmShowHelp  = 214;
 const unsigned cmAbout  = 215;
 const unsigned cmParamsChanged  = 216;
 
+const int k64KiB = 64*1024;
+
 
 const std::string defaultProperties = R"({
 "message_id": "{{RANDOM_UUID}}",

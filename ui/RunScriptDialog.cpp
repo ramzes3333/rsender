@@ -68,9 +68,30 @@ void RunScriptDialog::initUi() {
     insert(aborted);
 
     std::string content = readFile(scriptPath_);
-    if (!content.empty())
-        editor->insertText(content.data(), (uint)content.size(), false);
+    if (content.empty()) return;
 
+    if (content.size() <= k64KiB) {
+        editor->setEditorText(content);
+    } else {
+        std::string banner;
+        banner += "⚠ Script too large for editor ⚠\n";
+        banner += "Size: " + std::to_string(content.size()) + " bytes\n";
+        banner += "Saved to: " + scriptPath_ + "\n";
+        banner += "Showing preview only.\n";
+        banner += "It can be safely run. The file contains the entire script.\n";
+        banner += "----------------------------------------\n";
+
+        constexpr std::size_t kTailNoteReserve = 256;
+        const std::size_t bannerBytes = banner.size();
+        std::size_t maxPreview = (bannerBytes + kTailNoteReserve < k64KiB)
+                               ? (k64KiB - bannerBytes - kTailNoteReserve)
+                               : 0;
+
+        std::string preview = content.substr(0, maxPreview);
+        preview += "\n\n--- CUT ---\n(Preview truncated. Full script saved to the path above.)\n";
+
+        editor->setEditorText(banner + preview);
+    }
     runTButton = new TButton(TRect(size.x-22, size.y-3, size.x-12, size.y-1), "~R~un", cmRunScriptNow, bfNormal);
     insert(runTButton);
     cancelTButton = new TButton(TRect(size.x-11, size.y-3, size.x-2,  size.y-1), "Cancel", cmCancel, 0);
@@ -82,23 +103,6 @@ void RunScriptDialog::initUi() {
 
 void RunScriptDialog::handleEvent(TEvent& event) {
     if (event.what == evCommand) {
-        /*if (event.message.command == cmRunScriptNow) {
-            Logger::log("Running script: " + baseName(scriptPath_));
-            std::unique_ptr<ScriptRunner> runner = std::make_unique<ScriptRunner>();
-
-            runner->run(
-                scriptPath_,
-                /* onProgress = #1# [this](int pct) {
-                    Logger::log("Running script (onProgress): " + std::to_string(pct) + "%");
-                },
-                /* onLine = #1# [this](const std::string& line) {
-                    Logger::log("Running script (onLine): " + line);
-                },
-                /* onExit = #1# [this](int code) {
-                    Logger::log("Running script (onExit): " + code);
-                }
-            );
-        }*/
         switch (event.message.command) {
             case cmAbort: {
                 runner->abort();
@@ -109,8 +113,6 @@ void RunScriptDialog::handleEvent(TEvent& event) {
             }
             case cmRunScriptNow: {
                 clearEvent(event);
-                /*editor->setSelect(0, editor->bufLen, false);
-                editor->deleteSelect();*/
                 finished->hide();
                 aborted->hide();
                 cancelTButton->hide();
@@ -164,8 +166,6 @@ void RunScriptDialog::handleEvent(TEvent& event) {
                 Logger::log("Running script, received event: appendLog");
                 char *p = (char*) event.message.infoPtr;
                 if (p) {
-                    /*Logger::log("Running script, inserting text: " + std::string(p) + " " + std::to_string(strlen(p)));
-                    editor->insertText(p, strlen(p), false);*/
                     free(p);
                 }
                 clearEvent(event);

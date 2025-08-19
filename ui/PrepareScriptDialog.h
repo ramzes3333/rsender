@@ -61,7 +61,7 @@ private:
     TInputLine *passwordInputLine;
     TInputLine *vhostInputLine;
 
-    TLabel *scriptLabel;
+    EnhancedLabel *scriptLabel;
     TScrollBar *scriptHScroll;
     TScrollBar *scriptVScroll;
     EnhancedEditor *scriptEditor;

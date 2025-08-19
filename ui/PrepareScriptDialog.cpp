@@ -48,7 +48,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     tagsLabel = new EnhancedLabel(TRect(1, 1, size.x-2, 2), "Tags: no tags", nullptr);
     insert(tagsLabel);
 
-    paramsLabel = new EnhancedLabel(TRect(2, 2, 22, 3), "Parameters:", nullptr);
+    paramsLabel = new EnhancedLabel(TRect(2, 2, 15, 3), "Parameters:", nullptr);
     insert(paramsLabel);
 
     paramsHScroll = new TScrollBar(TRect(2, 27, 50, 28));
@@ -56,7 +56,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     paramsVScroll = new TScrollBar(TRect(50, 3, 51, 27));
     paramsVScroll->growMode = gfFixed;
 
-    paramsEditor = new ParamsEditor(TRect(2, 3, 50, 27), paramsHScroll, paramsVScroll, nullptr, 1000);
+    paramsEditor = new ParamsEditor(TRect(2, 3, 50, 27), paramsHScroll, paramsVScroll, nullptr, 65536);
     paramsEditor->options |= ofSelectable | ofFramed;
     paramsEditor->growMode = gfFixed;
     //paramsEditor->setState(sfActive, true);
@@ -74,7 +74,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     propertiesVScroll = new TScrollBar(TRect(size.x-3, 3, size.x-2, 13));
     propertiesVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    propertiesEditor = new TemplateEditor(TRect(53, 3, size.x-3, 13), propertiesHScroll, propertiesVScroll, nullptr, 1000);
+    propertiesEditor = new TemplateEditor(TRect(53, 3, size.x-3, 13), propertiesHScroll, propertiesVScroll, nullptr, 65536);
     propertiesEditor->options |= ofSelectable | ofFramed;
     propertiesEditor->growMode = gfGrowHiX;
     //propertiesEditor->setState(sfActive, true);
@@ -92,7 +92,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     payloadVScroll = new TScrollBar(TRect(size.x-3, 16, size.x-2, 25));
     payloadVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    payloadEditor = new TemplateEditor(TRect(53, 16, size.x-3, 25), payloadHScroll, payloadVScroll, nullptr, 1000);
+    payloadEditor = new TemplateEditor(TRect(53, 16, size.x-3, 25), payloadHScroll, payloadVScroll, nullptr, 65536);
     payloadEditor->options |= ofSelectable | ofFramed;
     payloadEditor->growMode = gfGrowHiX;
     //payloadEditor->setState(sfActive, true);
@@ -138,7 +138,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     insert(vhostInputLine);
 
     /*-------------------------------------*/
-    scriptLabel = new TLabel(TRect(2, 35, 20, 36), "Generated script:", nullptr);
+    scriptLabel = new EnhancedLabel(TRect(2, 35, 21, 36), "Generated script:", nullptr);
     insert(scriptLabel);
 
     scriptHScroll = new TScrollBar(TRect(2, 47, size.x-3, 48));
@@ -146,7 +146,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     scriptVScroll = new TScrollBar(TRect(size.x-3, 36, size.x-2, 47));
     scriptVScroll->growMode = gfGrowLoX | gfGrowHiX;
 
-    scriptEditor = new EnhancedEditor(TRect(2, 36, size.x-3, 47), scriptHScroll, scriptVScroll, nullptr, 65025);
+    scriptEditor = new EnhancedEditor(TRect(2, 36, size.x-3, 47), scriptHScroll, scriptVScroll, nullptr, 65536);
     scriptEditor->options |= ofSelectable | ofFramed;
     scriptEditor->growMode = gfGrowHiX;
     //scriptEditor->setState(sfActive, true);
@@ -244,11 +244,13 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
             const std::size_t cnt = countParameterLines(txt);
             std::string labelText = "Parameters (" + std::to_string(cnt) + "):";
 
-            /*TRect paramsRect = paramsLabel->getBounds();
+            paramsLabel->hide();
+            TRect paramsRect = paramsLabel->getBounds();
             paramsRect.b.x = paramsRect.a.x + labelText.length() + 2;
-            paramsLabel->changeBounds(paramsRect);*/
+            paramsLabel->changeBounds(paramsRect);
             paramsLabel->setText(labelText);
-            //this->redraw();
+            paramsLabel->show();
+
             clearEvent(event);
             return;
         }
@@ -326,6 +328,35 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
             ScriptSaver::saveScriptToFile(result.name, result.content);
             lastScriptPath = result.name;
 
+            std::string labelText = "Generated script (" + std::to_string(result.report.totalScriptBytes) + " bytes):";
+            scriptLabel->hide();
+            TRect scriptRect = scriptLabel->getBounds();
+            scriptRect.b.x = scriptRect.a.x + labelText.length() + 2;
+            scriptLabel->changeBounds(scriptRect);
+            scriptLabel->setText(labelText);
+            scriptLabel->show();
+
+            if (result.report.exceeds64k) {
+                std::string banner;
+                banner += "⚠ Script too large for editor ⚠\n";
+                banner += "Size: " + std::to_string(result.report.totalScriptBytes) + " bytes\n";
+                banner += "Saved to: " + result.name + "\n";
+                banner += "Showing preview only.\n";
+                banner += "It can be safely run. The file contains the entire script.\n";
+                banner += "----------------------------------------\n";
+
+                int _64k = 64*1024;
+                const size_t maxPreview = _64k - banner.size() - 256;
+                std::string preview = result.content.substr(0, maxPreview);
+                preview += "\n\n--- CUT ---\n(Preview truncated. Full script saved to the path above.)\n";
+
+                scriptEditor->setEditorText(banner + preview);
+
+                messageBox(mfError | mfOKButton,
+                "Script too large\nThe generated script is %zu bytes (limit 65536). It cannot be displayed entirely in the editor, but it has been saved to file and can be run.",
+                           result.report.totalScriptBytes);
+                return;
+            }
             scriptEditor->setSelect(0, scriptEditor->bufLen, false);
             scriptEditor->deleteSelect();
             scriptEditor->insertText(result.content.c_str(), result.content.size(), false);

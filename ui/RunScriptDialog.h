@@ -12,6 +12,7 @@
 #include <string>
 
 #include "TProgressBar.h"
+#include "common/EnhancedEditor.h"
 
 class ScriptRunner;
 
@@ -29,7 +30,7 @@ public:
 private:
     std::string scriptPath_;
     std::unique_ptr<ScriptRunner> runner;
-    TEditor* editor = nullptr;
+    EnhancedEditor* editor = nullptr;
 
     static std::string readFile(const std::string& path);
     static std::string baseName(const std::string& path);

@@ -6,13 +6,19 @@
 #include <string>
 #include <atomic>
 
+struct ScriptReport {
+    std::size_t totalScriptBytes = 0;
+    bool exceeds64k = false;
+};
+
 struct ScriptResult {
     std::string name;
     std::string content;
+    ScriptReport report;
 
     ScriptResult() = default;
-    ScriptResult(std::string name, std::string content)
-        : name(std::move(name)), content(std::move(content)) {}
+    ScriptResult(std::string name, std::string content, ScriptReport report = {})
+        : name(std::move(name)), content(std::move(content)), report(std::move(report)) {}
 };
 
 class ScriptGenerator {

@@ -3,6 +3,7 @@
 #include <ctime>
 
 #include "../util/Utils.h"
+#include "../Const.h"
 #include "../rabbitmq-access-data/RabbitMQAccessData.h"
 #include <sstream>
 #include <vector>
@@ -33,44 +34,48 @@ ScriptGenerator::ScriptGenerator(const std::string& tags,
 ScriptResult ScriptGenerator::generateScript() {
     size_t pos;
 
-    std::string prefix = "Tags: ";
-    if (tags.rfind(prefix, 0) == 0) {
-        tags = tags.substr(prefix.length());
-    }
+    std::string tagsStr = tags;
+    const std::string prefix = "Tags: ";
+    if (tagsStr.rfind(prefix, 0) == 0)
+        tagsStr = tagsStr.substr(prefix.length());
 
     std::vector<std::string> fieldNames;
-    std::istringstream tagsStream(tags);
-    std::string field;
-    while (std::getline(tagsStream, field, '|')) {
-        field = Utils::trim(field);
-        if (!field.empty()) {
-            fieldNames.push_back(field);
+    {
+        std::istringstream tagsStream(tagsStr);
+        std::string field;
+        while (std::getline(tagsStream, field, '|')) {
+            field = Utils::trim(field);
+            if (!field.empty())
+                fieldNames.push_back(field);
         }
     }
 
     std::ostringstream output;
+    auto append = [&](const std::string& s) {
+        output << s;
+    };
 
-    output << "#!/bin/bash\n\n";
-    output << "RABBITMQ_USERNAME=" << rabbitMQAccessData->username << "\n";
-    output << "RABBITMQ_PASSWORD=" << rabbitMQAccessData->password << "\n";
-    output << "RABBITMQ_HOST=" << rabbitMQAccessData->host << "\n";
-    output << "RABBITMQ_PORT=" << rabbitMQAccessData->port << "\n";
-    output << "RABBITMQ_VIRTUAL_HOST='" << rabbitMQAccessData->vhost << "'\n\n";
+    // Header
+    append("#!/bin/bash\n\n");
+    append("RABBITMQ_USERNAME=" + rabbitMQAccessData->username + "\n");
+    append("RABBITMQ_PASSWORD=" + rabbitMQAccessData->password + "\n");
+    append("RABBITMQ_HOST="     + rabbitMQAccessData->host     + "\n");
+    append("RABBITMQ_PORT="     + rabbitMQAccessData->port     + "\n");
+    append("RABBITMQ_VIRTUAL_HOST='" + rabbitMQAccessData->vhost + "'\n\n");
 
-    while ((pos = propertiesTemplate.find("{{RANDOM_UUID}}")) != std::string::npos) {
-        std::string randomUuid = Utils::generateUUID();
-        propertiesTemplate.replace(pos, 15, randomUuid);
-    }
-    while ((pos = payloadTemplate.find("{{RANDOM_UUID}}")) != std::string::npos) {
-        std::string randomUuid = Utils::generateUUID();
-        payloadTemplate.replace(pos, 15, randomUuid);
-    }
-    std::string now = Utils::getCurrentDateTime();
-    while ((pos = propertiesTemplate.find("{{NOW}}")) != std::string::npos)
-        propertiesTemplate.replace(pos, 7, now);
+    std::string propsTpl   = propertiesTemplate;
+    std::string payloadTpl = payloadTemplate;
 
-    while ((pos = payloadTemplate.find("{{NOW}}")) != std::string::npos)
-        payloadTemplate.replace(pos, 7, now);
+    while ((pos = propsTpl.find("{{RANDOM_UUID}}")) != std::string::npos)
+        propsTpl.replace(pos, 15, Utils::generateUUID());
+    while ((pos = payloadTpl.find("{{RANDOM_UUID}}")) != std::string::npos)
+        payloadTpl.replace(pos, 15, Utils::generateUUID());
+
+    const std::string now = Utils::getCurrentDateTime();
+    while ((pos = propsTpl.find("{{NOW}}")) != std::string::npos)
+        propsTpl.replace(pos, 7, now);
+    while ((pos = payloadTpl.find("{{NOW}}")) != std::string::npos)
+        payloadTpl.replace(pos, 7, now);
 
     std::istringstream paramStream(params);
     std::string line;
@@ -81,39 +86,55 @@ ScriptResult ScriptGenerator::generateScript() {
         if (line.empty()) continue;
 
         std::vector<std::string> values;
-        std::istringstream valueStream(line);
-        std::string value;
-        while (std::getline(valueStream, value, '|')) {
-            values.push_back(Utils::trim(value));
+        {
+            std::istringstream valueStream(line);
+            std::string value;
+            while (std::getline(valueStream, value, '|'))
+                values.push_back(Utils::trim(value));
         }
 
-        std::string filledProperties = propertiesTemplate;
-        std::string filledPayload = payloadTemplate;
+        std::string filledProps   = propsTpl;
+        std::string filledPayload = payloadTpl;
 
         for (size_t i = 0; i < fieldNames.size(); ++i) {
-            std::string tag = "{{" + fieldNames[i] + "}}";
-            std::string replacement = (i < values.size()) ? values[i] : "";
+            const std::string tag = "{{" + fieldNames[i] + "}}";
+            const std::string& replacement = (i < values.size()) ? values[i] : std::string{};
 
-            while ((pos = filledProperties.find(tag)) != std::string::npos) {
-                filledProperties.replace(pos, tag.length(), replacement);
+            size_t at = 0;
+            while ((at = filledProps.find(tag, at)) != std::string::npos) {
+                filledProps.replace(at, tag.length(), replacement);
+                at += replacement.length();
             }
-            while ((pos = filledPayload.find(tag)) != std::string::npos) {
-                filledPayload.replace(pos, tag.length(), replacement);
+            at = 0;
+            while ((at = filledPayload.find(tag, at)) != std::string::npos) {
+                filledPayload.replace(at, tag.length(), replacement);
+                at += replacement.length();
             }
         }
 
-        output << "properties=$(cat <<EOF\n" << filledProperties << "\nEOF\n)\n\n";
-        output << "payload=$(cat <<EOF\n" << filledPayload << "\nEOF\n)\n\n";
+        append("properties=$(cat <<EOF\n" + filledProps + "\nEOF\n)\n\n");
+        append("payload=$(cat <<EOF\n" + filledPayload + "\nEOF\n)\n\n");
 
-        output << "./rabbitmqadmin.py -u\"${RABBITMQ_USERNAME}\" -p\"${RABBITMQ_PASSWORD}\" "
-               << "-H\"${RABBITMQ_HOST}\" -P\"${RABBITMQ_PORT}\" "
-               << "-V\"${RABBITMQ_VIRTUAL_HOST}\" "
-               << "publish routing_key=\"" << routingkey << "\" exchange=" << exchange << " "
-               << "properties=\"${properties}\" payload=\"${payload}\"\n";
-        //output << "sleep 1\n";
-        output << "echo \"Command executed (" << ++command_counter << ")\"\n\n";
+        std::ostringstream cmd;
+        cmd << "./rabbitmqadmin.py -u\"${RABBITMQ_USERNAME}\" -p\"${RABBITMQ_PASSWORD}\" "
+            << "-H\"${RABBITMQ_HOST}\" -P\"${RABBITMQ_PORT}\" "
+            << "-V\"${RABBITMQ_VIRTUAL_HOST}\" "
+            << "publish routing_key=\"" << routingkey << "\" exchange=" << exchange << " "
+            << "properties=\"${properties}\" payload=\"${payload}\"\n";
+        append(cmd.str());
+
+        std::ostringstream echo;
+        echo << "echo \"Command executed (" << (++command_counter) << ")\"\n\n";
+        append(echo.str());
     }
-    return ScriptResult(generateScriptPath(), output.str());
+
+    std::string scriptContent = output.str();
+
+    ScriptReport rep;
+    rep.totalScriptBytes   = scriptContent.size();
+    rep.exceeds64k = (rep.totalScriptBytes > k64KiB);
+
+    return ScriptResult(generateScriptPath(), std::move(scriptContent), rep);
 }
 
 std::atomic<int> ScriptGenerator::scriptcounter{0};

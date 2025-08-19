@@ -5,9 +5,11 @@
 
 #include <tvision/tv.h>
 
-class ReadOnlyEditor : public TEditor {
+#include "EnhancedEditor.h"
+
+class ReadOnlyEditor : public EnhancedEditor {
 public:
-    using TEditor::TEditor;
+    using EnhancedEditor::EnhancedEditor;
 
     virtual void handleEvent( TEvent& event );
 };
