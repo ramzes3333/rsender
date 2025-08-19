@@ -16,6 +16,9 @@ const unsigned cmAbort  = 210;
 const unsigned cmOpenProject  = 211;
 const unsigned cmSaveProject  = 212;
 const unsigned cmExtractFromLog  = 213;
+const unsigned cmShowHelp  = 214;
+const unsigned cmAbout  = 215;
+const unsigned cmParamsChanged  = 216;
 
 
 const std::string defaultProperties = R"({

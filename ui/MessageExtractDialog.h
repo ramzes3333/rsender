@@ -3,12 +3,13 @@
 
 #define Uses_TDialog
 #define Uses_TButton
+#define Uses_TCheckBoxes
 
 #include <tvision/tv.h>
 
 #include <string>
 
-#include "EnhancedEditor.h"
+#include "common/EnhancedEditor.h"
 #include "../extractor/MessageExtractor.h"
 
 constexpr ushort cmExtract = 0x5001;
@@ -26,6 +27,7 @@ private:
     void handleEvent(TEvent& ev) override;
 
     EnhancedEditor* editor {nullptr};
+    TCheckBoxes* reservedCb {nullptr};
     TButton* extractBtn {nullptr};
     TButton* cancelBtn {nullptr};
     LogExtractResult result_;

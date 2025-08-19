@@ -3,7 +3,7 @@
 
 #define Uses_TEvent
 
-#include "EnhancedEditor.h"
+#include "common/EnhancedEditor.h"
 
 class TemplateEditor : public EnhancedEditor {
 public:

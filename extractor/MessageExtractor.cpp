@@ -103,19 +103,37 @@ static json parsePropertiesBlock(const std::string& block, std::string& errorOut
 static std::string buildPayloadTemplateAndCollect(
     const json& bodyObj,
     std::vector<std::string>& tagsOut,
-    std::vector<std::string>& valuesOut)
+    std::vector<std::string>& valuesOut,
+    const ExtractOptions& opt)
 {
-    if (!bodyObj.is_object()) {
+    if (!bodyObj.is_object())
         return bodyObj.dump();
-    }
 
     std::ostringstream oss;
     oss << "{";
-
     bool first = true;
+
     for (auto it = bodyObj.begin(); it != bodyObj.end(); ++it) {
         const std::string key = it.key();
         const std::string TAG = toUpper(key);
+
+        const bool isReservedPayloadField =
+            opt.applyReservedTags &&
+            kReservedPayloadMap.find(key) != kReservedPayloadMap.end();
+
+        if (!first) oss << ",";
+        first = false;
+        oss << "\n  " << json(key).dump() << ": ";
+
+        if (isReservedPayloadField) {
+            const std::string& reserved = kReservedPayloadMap.at(key);
+            if (it.value().is_string() || it.value().is_object() || it.value().is_array()) {
+                oss << "\"{{" << reserved << "}}\"";
+            } else {
+                oss << "{{" << reserved << "}}";
+            }
+            continue;
+        }
 
         if (it.value().is_string()) {
             valuesOut.push_back(it.value().get<std::string>());
@@ -133,17 +151,9 @@ static std::string buildPayloadTemplateAndCollect(
 
         tagsOut.push_back(TAG);
 
-        if (!first) oss << ",";
-        first = false;
-        oss << "\n  " << json(key).dump() << ": ";
-
         if (it.value().is_string()) {
             oss << "\"{{" << TAG << "}}\"";
-        } else if (it.value().is_number()) {
-            oss << "{{" << TAG << "}}";
-        } else if (it.value().is_boolean()) {
-            oss << "{{" << TAG << "}}";
-        } else if (it.value().is_null()) {
+        } else if (it.value().is_number() || it.value().is_boolean() || it.value().is_null()) {
             oss << "{{" << TAG << "}}";
         } else {
             oss << "\"{{" << TAG << "}}\"";
@@ -242,10 +252,16 @@ LogExtractResult parseFirstEventFromLog(const std::string& logBlob,
 
     R.propertiesJson = filterAndMapProperties(props, opt);
 
+    if (opt.applyReservedTags) {
+        if (R.propertiesJson.contains("message_id")) {
+            R.propertiesJson["message_id"] = std::string("{{") + kReservedPropMessageId + "}}";
+        }
+    }
+
     // 6) Build payload template + collect tags/values
     std::vector<std::string> tags;
     std::vector<std::string> values;
-    R.payloadTemplate = buildPayloadTemplateAndCollect(bodyObj, tags, values);
+    R.payloadTemplate = buildPayloadTemplateAndCollect(bodyObj, tags, values, opt);
 
     std::sort(tags.begin(), tags.end());
     tags.erase(std::unique(tags.begin(), tags.end()), tags.end());

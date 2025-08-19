@@ -24,10 +24,11 @@
 #include "../util/Utils.h"
 #include "../util/Logger.h"
 #include "../Const.h"
-#include "EnhancedLabel.h"
-#include "EnhancedEditor.h"
-#include "PasswordInputLine.h"
+#include "common/EnhancedLabel.h"
+#include "common/EnhancedEditor.h"
+#include "common/PasswordInputLine.h"
 #include "RunScriptDialog.h"
+#include "../util/ParamsCounter.h"
 
 static constexpr const char* kProjectsDir = "rsender-data/projects";
 static constexpr const char* kFilter = "*.json";
@@ -47,7 +48,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     tagsLabel = new EnhancedLabel(TRect(1, 1, size.x-2, 2), "Tags: no tags", nullptr);
     insert(tagsLabel);
 
-    paramsLabel = new TLabel(TRect(2, 2, 15, 3), "Parameters:", nullptr);
+    paramsLabel = new EnhancedLabel(TRect(2, 2, 22, 3), "Parameters:", nullptr);
     insert(paramsLabel);
 
     paramsHScroll = new TScrollBar(TRect(2, 27, 50, 28));
@@ -55,7 +56,7 @@ PrepareScriptDialog::PrepareScriptDialog(const TRect& bounds, const char* title)
     paramsVScroll = new TScrollBar(TRect(50, 3, 51, 27));
     paramsVScroll->growMode = gfFixed;
 
-    paramsEditor = new EnhancedEditor(TRect(2, 3, 50, 27), paramsHScroll, paramsVScroll, nullptr, 1000);
+    paramsEditor = new ParamsEditor(TRect(2, 3, 50, 27), paramsHScroll, paramsVScroll, nullptr, 1000);
     paramsEditor->options |= ofSelectable | ofFramed;
     paramsEditor->growMode = gfFixed;
     //paramsEditor->setState(sfActive, true);
@@ -237,18 +238,34 @@ void PrepareScriptDialog::saveRabbitMQAccessData() {
 }
 
 void PrepareScriptDialog::handleEvent(TEvent& event) {
-    if (event.what == evBroadcast && event.message.command == cmUpdateTags) {
-        if (!tagsLabel)
-            return;
+    if (event.what == evBroadcast) {
+        if (event.message.command == cmParamsChanged) {
+            const std::string txt = paramsEditor->getEditorText();
+            const std::size_t cnt = countParameterLines(txt);
+            std::string labelText = "Parameters (" + std::to_string(cnt) + "):";
 
-        auto *te = new TagsExtractor(propertiesEditor->getEditorText(), payloadEditor->getEditorText());
-        std::string tags = te->extractTags();
-        if (tags.empty()) {
-            tags = "Tags: no tags";
-        } else {
-            tags = "Tags: " + tags;
+            /*TRect paramsRect = paramsLabel->getBounds();
+            paramsRect.b.x = paramsRect.a.x + labelText.length() + 2;
+            paramsLabel->changeBounds(paramsRect);*/
+            paramsLabel->setText(labelText);
+            //this->redraw();
+            clearEvent(event);
+            return;
         }
-        tagsLabel->setText(tags.c_str());
+        if (event.message.command == cmUpdateTags) {
+            if (!tagsLabel)
+                return;
+
+            auto *te = new TagsExtractor(propertiesEditor->getEditorText(), payloadEditor->getEditorText());
+            std::string tags = te->extractTags();
+            if (tags.empty()) {
+                tags = "Tags: no tags";
+            } else {
+                tags = "Tags: " + tags;
+            }
+            tagsLabel->setText(tags.c_str());
+            return;
+        }
     }
     if (event.what == evCommand) {
         if (event.message.command == cmSaveProject) {
@@ -312,19 +329,26 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
             scriptEditor->setSelect(0, scriptEditor->bufLen, false);
             scriptEditor->deleteSelect();
             scriptEditor->insertText(result.content.c_str(), result.content.size(), false);
-        } else if (event.message.command == cmDefaultProperties) {
+            return;
+        }
+        if (event.message.command == cmDefaultProperties) {
             propertiesEditor->setSelect(0, propertiesEditor->bufLen, false);
             propertiesEditor->deleteSelect();
             propertiesEditor->insertText(defaultProperties.c_str(), strlen(defaultProperties.c_str()), false);
             message(owner, evBroadcast, cmUpdateTags, nullptr);
-        } else if (event.message.command == cmDefaultPayload) {
+            return;
+        }
+        if (event.message.command == cmDefaultPayload) {
             payloadEditor->setSelect(0, payloadEditor->bufLen, false);
             payloadEditor->deleteSelect();
             payloadEditor->insertText(defaultPayload.c_str(), strlen(defaultPayload.c_str()), false);
             message(owner, evBroadcast, cmUpdateTags, nullptr);
-        } else if (event.message.command == cmClearParams) {
+            return;
+        }
+        if (event.message.command == cmClearParams) {
             paramsEditor->setSelect(0, paramsEditor->bufLen, false);
             paramsEditor->deleteSelect();
+            return;
         }
     }
 

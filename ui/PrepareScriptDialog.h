@@ -5,12 +5,13 @@
 #define Uses_TInputLine
 #include <tvision/tv.h>
 
+#include "ParamsEditor.h"
+#include "common/EnhancedLabel.h"
+#include "common/EnhancedEditor.h"
+#include "TemplateEditor.h"
+
 #include <nlohmann/json.hpp>
 using nlohmann::json;
-
-#include "EnhancedLabel.h"
-#include "EnhancedEditor.h"
-#include "TemplateEditor.h"
 
 class PrepareScriptDialog : public TDialog {
 
@@ -37,10 +38,10 @@ private:
 
     EnhancedLabel *tagsLabel;
 
-    TLabel *paramsLabel;
+    EnhancedLabel *paramsLabel;
     TScrollBar *paramsHScroll;
     TScrollBar *paramsVScroll;
-    EnhancedEditor *paramsEditor;
+    ParamsEditor *paramsEditor;
 
     TLabel *propertiesLabel;
     TScrollBar *propertiesHScroll;

@@ -7,7 +7,7 @@
 #include <complex>
 #include <filesystem>
 
-#include "ReadOnlyEditor.h"
+#include "common/ReadOnlyEditor.h"
 #include "../Const.h"
 #include "../util/Logger.h"
 #include "../script/ScriptRunner.h"

@@ -12,11 +12,13 @@
 #define Uses_TKeys
 #define Uses_TWindow
 #define Uses_TDialog
+#define Uses_MsgBox
 
 #include <tvision/tv.h>
 #include "ui/PrepareScriptDialog.h"
 #include "ui/MessageExtractDialog.h"
 #include "Const.h"
+#include "ui/HelpDialog.h"
 
 class MyApp : public TApplication {
 public:
@@ -67,15 +69,40 @@ void MyApp::openLogExtractor() {
 
 void MyApp::handleEvent(TEvent& ev) {
     TApplication::handleEvent(ev);
-    if (ev.what == evCommand && (ev.message.command == cmOpenProject || ev.message.command == cmSaveProject)) {
-        if (deskTop->current) {
-            message(deskTop->current, ev.what, ev.message.command, nullptr);
-            clearEvent(ev);
+    if (ev.what == evCommand) {
+        switch (ev.message.command) {
+            case cmOpenProject:
+            case cmSaveProject: {
+                if (deskTop->current) {
+                    message(deskTop->current, ev.what, ev.message.command, nullptr);
+                    clearEvent(ev);
+                }
+                return;
+            }
+            case cmExtractFromLog: {
+                openLogExtractor();
+                clearEvent(ev);
+                return;
+            }
+            case cmShowHelp: {
+                TRect r(6, 2, deskTop->size.x - 7, deskTop->size.y - 3);
+                auto* dlg = new HelpDialog(r);
+                execView(dlg);
+                destroy(dlg);
+                clearEvent(ev);
+                return;
+            }
+            case cmAbout: {
+                messageBox(mfInformation | mfOKButton,
+                    "rsender — RabbitMQ message script generator\n"
+                    "© 2025 Andrzej\n");
+                clearEvent(ev);
+                return;
+            }
+            default: {
+                clearEvent(ev);
+            };
         }
-    }
-    if (ev.what == evCommand && (ev.message.command == cmExtractFromLog)) {
-        openLogExtractor();
-        clearEvent(ev);
     }
 }
 
@@ -85,9 +112,12 @@ TMenuBar* MyApp::initMenuBar(TRect r) {
     *new TSubMenu("~F~ile", kbAltF)
         + *new TMenuItem("~O~pen...", cmOpenProject, kbF2)
         + *new TMenuItem("~S~ave...", cmSaveProject, kbF3)
-        + *new TMenuItem("~E~xtract...", cmExtractFromLog, kbF4)
+        + *new TMenuItem("~E~xtract from log...", cmExtractFromLog, kbF4)
         + newLine()
-        + *new TMenuItem("E~x~it", cmQuit, kbAltX, hcNoContext));
+        + *new TMenuItem("E~x~it", cmQuit, kbAltX, hcNoContext)
+    + *new TSubMenu("~H~elp", kbAltH)
+        + *new TMenuItem("~H~elp",   cmShowHelp, kbF1)
+        + *new TMenuItem("~A~bout…", cmAbout,    kbF5));
 }
 
 TStatusLine *MyApp::initStatusLine( TRect r )
@@ -95,10 +125,9 @@ TStatusLine *MyApp::initStatusLine( TRect r )
     r.a.y = r.b.y - 1;
     return new TStatusLine( r,
       *new TStatusDef( 0, 0xFFFF ) +
-        *new TStatusItem( 0, kbShiftDel, cmCut ) +
-        *new TStatusItem( 0, kbCtrlIns, cmCopy ) +
-        *new TStatusItem( 0, kbShiftIns, cmPaste ) +
-        *new TStatusItem( "", kbCtrlF5, cmResize )
+            *new TStatusItem( 0, kbCtrlX, cmCut ) +
+            *new TStatusItem( 0, kbCtrlC, cmCopy ) +
+            *new TStatusItem( 0, kbCtrlV, cmPaste )
         );
 }
 

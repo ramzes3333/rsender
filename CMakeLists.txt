@@ -16,6 +16,7 @@ add_executable(rsender
         main.cpp
         util/Logger.cpp util/Logger.h
         util/Utils.cpp util/Utils.h
+        util/ParamsCounter.h
         script/ScriptGenerator.cpp script/ScriptGenerator.h
         script/TagsExtractor.cpp script/TagsExtractor.h
         script/ScriptSaver.cpp script/ScriptSaver.h
@@ -24,14 +25,16 @@ add_executable(rsender
         script/ParamsValidator.cpp script/ParamsValidator.h
         script/JsonValidator.cpp script/JsonValidator.h
         ui/PrepareScriptDialog.cpp ui/PrepareScriptDialog.h
-        ui/EnhancedLabel.cpp ui/EnhancedLabel.h
-        ui/EnhancedEditor.cpp ui/EnhancedEditor.h
+        ui/common/EnhancedLabel.cpp ui/common/EnhancedLabel.h
+        ui/common/EnhancedEditor.cpp ui/common/EnhancedEditor.h
         ui/TemplateEditor.cpp ui/TemplateEditor.h
         ui/RunScriptDialog.cpp ui/RunScriptDialog.h
-        ui/ReadOnlyEditor.cpp ui/ReadOnlyEditor.h
-        ui/PasswordInputLine.cpp ui/PasswordInputLine.h
+        ui/common/ReadOnlyEditor.cpp ui/common/ReadOnlyEditor.h
+        ui/common/PasswordInputLine.cpp ui/common/PasswordInputLine.h
         ui/TProgressBar.cpp ui/TProgressBar.h
         ui/MessageExtractDialog.cpp ui/MessageExtractDialog.h
+        ui/HelpDialog.cpp ui/HelpDialog.h
+        ui/ParamsEditor.cpp ui/ParamsEditor.h
         helper-script/RabbitMqAdminScriptDownloader.cpp
         helper-script/RabbitMqAdminScriptDownloader.h
         extractor/MessageExtractor.cpp extractor/MessageExtractor.h
