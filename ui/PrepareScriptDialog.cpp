@@ -345,8 +345,7 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
                 banner += "It can be safely run. The file contains the entire script.\n";
                 banner += "----------------------------------------\n";
 
-                int _64k = 64*1024;
-                const size_t maxPreview = _64k - banner.size() - 256;
+                const size_t maxPreview = k64KiB - banner.size() - 256;
                 std::string preview = result.content.substr(0, maxPreview);
                 preview += "\n\n--- CUT ---\n(Preview truncated. Full script saved to the path above.)\n";
 
