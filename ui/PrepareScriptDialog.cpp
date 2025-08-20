@@ -19,8 +19,8 @@
 #include "../script/ScriptGenerator.h"
 #include "../script/TagsExtractor.h"
 #include "../script/ScriptSaver.h"
-#include "../script/ParamsValidator.h"
-#include "../script/JsonValidator.h"
+#include "../validator/ParamsValidator.h"
+#include "../validator/JsonValidator.h"
 #include "../util/Utils.h"
 #include "../util/Logger.h"
 #include "../Const.h"
@@ -184,24 +184,7 @@ void PrepareScriptDialog::setExchange(const std::string &exchange) {
     routingkeyInputLine->setData((void*)exchange.c_str());
 }
 
-bool PrepareScriptDialog::isDataCorrectBeforeScriptGeneration() {
-    auto paramsValidationResult = validateParams(
-        paramsEditor->getEditorText(),
-        tagsLabel->getText()
-    );
-
-    if (!paramsValidationResult.ok) {
-        messageBox(mfError | mfOKButton,
-                   "Params validation failed!\n\n"
-                   "Invalid lines: %zu\n"
-                   "First invalid line: %zu\n"
-                   "Content: %s",
-                   paramsValidationResult.invalidCount,
-                   paramsValidationResult.firstInvalidLine,
-                   paramsValidationResult.firstInvalidContent.c_str());
-        return false;
-    }
-
+bool PrepareScriptDialog::isTemplatesCorrect() {
     auto propertiesValidationResult = validateTemplateJson(propertiesEditor->getEditorText());
     if (!propertiesValidationResult.ok) {
         messageBox(mfError | mfOKButton,
@@ -308,7 +291,29 @@ void PrepareScriptDialog::handleEvent(TEvent& event) {
             return;
         }
         if (event.message.command == cmGenerateScript) {
-            if (!isDataCorrectBeforeScriptGeneration()) return;
+            auto paramsValidationResult = validateParams(
+                paramsEditor->getEditorText(),
+                tagsLabel->getText()
+            );
+
+            if (!paramsValidationResult.ok) {
+                for (size_t line : paramsValidationResult.invalidLines) {
+                    paramsEditor->setLineColor(line - 1, TColorDesired(TColorBIOS(0xC)));
+                }
+                messageBox(mfError | mfOKButton,
+                           "Params validation failed!\n\n"
+                           "Invalid lines: %zu\n"
+                           "First invalid line: %zu\n"
+                           "Content: %s",
+                           paramsValidationResult.invalidCount,
+                           paramsValidationResult.firstInvalidLine,
+                           paramsValidationResult.firstInvalidContent.c_str());
+                return;
+            } else {
+                paramsEditor->clearAllLineColors();
+            }
+
+            if (!isTemplatesCorrect()) return;
 
             saveRabbitMQAccessData();
 

@@ -2,6 +2,7 @@
 #define PARAMSVALIDATOR_H
 
 #include <string>
+#include <vector>
 
 struct ValidationResult {
     bool ok = true;
@@ -9,6 +10,8 @@ struct ValidationResult {
     size_t firstInvalidLine = 0;   // 1-based; 0 if none
     std::string firstInvalidContent;
     std::string message;
+
+    std::vector<size_t> invalidLines;
 };
 
 ValidationResult validateParams(const std::string& editorText,

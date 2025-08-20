@@ -69,6 +69,8 @@ ValidationResult validateParams(const std::string& editorText,
         if (fields.size() != requiredFields) {
             res.ok = false;
             ++res.invalidCount;
+            res.invalidLines.push_back(lineNo);
+
             if (res.firstInvalidLine == 0) {
                 res.firstInvalidLine = lineNo;
                 res.firstInvalidContent = rawLine;
@@ -84,6 +86,7 @@ ValidationResult validateParams(const std::string& editorText,
         if (anyEmpty) {
             res.ok = false;
             ++res.invalidCount;
+            res.invalidLines.push_back(lineNo);
             if (res.firstInvalidLine == 0) {
                 res.firstInvalidLine = lineNo;
                 res.firstInvalidContent = rawLine;

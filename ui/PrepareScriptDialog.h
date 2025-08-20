@@ -9,6 +9,7 @@
 #include "common/EnhancedLabel.h"
 #include "common/EnhancedEditor.h"
 #include "TemplateEditor.h"
+#include "../validator/ParamsValidator.h"
 
 #include <nlohmann/json.hpp>
 using nlohmann::json;
@@ -34,7 +35,7 @@ private:
     void cmdSave();
     void cmdOpen();
 
-    bool isDataCorrectBeforeScriptGeneration();
+    bool isTemplatesCorrect();
 
     EnhancedLabel *tagsLabel;
 

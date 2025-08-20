@@ -22,8 +22,8 @@ add_executable(rsender
         script/ScriptSaver.cpp script/ScriptSaver.h
         script/ScriptRunner.cpp script/ScriptRunner.h
         script/RunWorkspace.cpp script/RunWorkspace.h
-        script/ParamsValidator.cpp script/ParamsValidator.h
-        script/JsonValidator.cpp script/JsonValidator.h
+        validator/ParamsValidator.cpp validator/ParamsValidator.h
+        validator/JsonValidator.cpp validator/JsonValidator.h
         ui/PrepareScriptDialog.cpp ui/PrepareScriptDialog.h
         ui/common/EnhancedLabel.cpp ui/common/EnhancedLabel.h
         ui/common/EnhancedEditor.cpp ui/common/EnhancedEditor.h
