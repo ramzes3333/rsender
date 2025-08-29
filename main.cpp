@@ -125,6 +125,7 @@ TStatusLine *MyApp::initStatusLine( TRect r )
     r.a.y = r.b.y - 1;
     return new TStatusLine( r,
       *new TStatusDef( 0, 0xFFFF ) +
+            *new TStatusItem( "~Alt-X~ Exit", kbAltX, cmQuit ) +
             *new TStatusItem( 0, kbCtrlX, cmCut ) +
             *new TStatusItem( 0, kbCtrlC, cmCopy ) +
             *new TStatusItem( 0, kbCtrlV, cmPaste )

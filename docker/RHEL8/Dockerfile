@@ -32,6 +32,7 @@ ADD rabbitmq-access-data /src/rabbitmq-access-data
 ADD script /src/script
 ADD ui /src/ui
 ADD util /src/util
+ADD validator /src/validator
 ADD CMakeLists.txt /src/
 ADD Const.h /src/
 ADD main.cpp /src/
